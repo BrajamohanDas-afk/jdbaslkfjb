@@ -7,7 +7,7 @@ test('gate-time formatting', () => {
   assert.equal(duration(140), '2 h 20 m')
   assert.equal(duration(120), '2 h')
   assert.match(agePhrase(20), /^20-minute-old/)
-  assert.equal(mw(undefined), '—')
+  assert.equal(mw(undefined), '-')
   assert.equal(signed(-5.4, 1), '−5.4')
   assert.equal(signed(0), '0')
   assert.equal(percent(17.9), '17.9%')

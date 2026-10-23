@@ -21,28 +21,18 @@ import {
   shortDate,
   signed,
 } from './format'
-import Icon from './icons'
 
-const MINT = '#34d399'
-const ROSE = '#fb7185'
-const MUTED = '#a8b3cf'
-const GRID = 'rgba(255,255,255,0.07)'
+const BLUE = '#2B5F8A'
+const TEAL = '#0F6B63'
+const RED = '#B23A2E'
+const MUTED = '#6B7F8B'
+const GRID = '#D5DEE3'
+const MONO = "'IBM Plex Mono', monospace"
 
 const axis = {
-  tick: { fill: MUTED, fontSize: 11 },
+  tick: { fill: MUTED, fontSize: 10, fontFamily: MONO },
   tickLine: false,
-  axisLine: { stroke: 'rgba(255,255,255,0.11)' },
-}
-
-function BarGradient({ id, from, to }) {
-  return (
-    <defs>
-      <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor={from} />
-        <stop offset="100%" stopColor={to} />
-      </linearGradient>
-    </defs>
-  )
+  axisLine: { stroke: '#B9C6CE' },
 }
 
 function biasScale(values) {
@@ -55,16 +45,11 @@ function biasScale(values) {
   }
 }
 
-function ChartCard({ title, note, label, className, icon, children }) {
+function ChartCard({ title, note, label, className, children }) {
   return (
     <section className="card">
       <header className="card__head">
         <div className="card__title">
-          {icon && (
-            <span className="title-icon">
-              <Icon name={icon} />
-            </span>
-          )}
           <h3>{title}</h3>
         </div>
         {note && <p>{note}</p>}
@@ -107,22 +92,15 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
     <>
       <header className="section-head">
         <div>
-          <p className="eyebrow">
-            <span className="title-icon title-icon--sm">
-              <Icon name="activity" />
-            </span>
-            Forecast accuracy
-          </p>
-          <h2 className="gradient-text">How wrong was January?</h2>
+          <p className="eyebrow">Forecast accuracy</p>
+          <h2>How wrong was January?</h2>
           <p className="section-head__sub">
-            Every settlement period the desk could have bought — scored against metered wind at
+            Every settlement period the desk could have bought, scored against metered wind at
             the {gate.label} gate.
           </p>
         </div>
-        <div className="section-head__chips">
-          <span className="chip">
-            {gate.label} · {gate.cutoff}
-          </span>
+        <div className="section-head__meta">
+          {gate.label} {gate.cutoff}
         </div>
       </header>
 
@@ -152,8 +130,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
           <div className="grid">
             <ChartCard
               title="Daily error"
-              icon="bar-chart"
-              note="MAE on top; signed bias below — mint ran high, rose ran low"
+              note="MAE above; signed bias below. Teal ran high, red ran low."
               label="Two stacked panels: daily mean absolute error bars and signed bias bars"
               className="daily-split"
             >
@@ -168,12 +145,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           syncId="daily"
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
-                          <BarGradient id="maeDailyGrad" from="#8b5cf6" to="#60a5fa" />
-                          <CartesianGrid
-                            stroke={GRID}
-                            strokeDasharray="3 4"
-                            vertical={false}
-                          />
+                          <CartesianGrid stroke={GRID} strokeDasharray="1 4" vertical={false} />
                           <XAxis dataKey="label" hide />
                           <YAxis
                             {...axis}
@@ -196,9 +168,10 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           <Bar
                             dataKey="mae"
                             name="MAE"
-                            fill="url(#maeDailyGrad)"
-                            radius={[3, 3, 0, 0]}
+                            fill={BLUE}
+                            radius={[0, 0, 0, 0]}
                             maxBarSize={14}
+                            isAnimationActive={false}
                           />
                         </BarChart>
                       </ResponsiveContainer>
@@ -214,11 +187,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           syncId="daily"
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
-                          <CartesianGrid
-                            stroke={GRID}
-                            strokeDasharray="3 4"
-                            vertical={false}
-                          />
+                          <CartesianGrid stroke={GRID} strokeDasharray="1 4" vertical={false} />
                           <XAxis
                             dataKey="label"
                             {...axis}
@@ -246,14 +215,16 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                                 : label
                             }
                           />
-                          <ReferenceLine
-                            y={0}
-                            stroke="rgba(196,181,253,0.42)"
-                            strokeDasharray="3 3"
-                          />
-                          <Bar dataKey="bias" name="Bias" maxBarSize={14}>
+                          <ReferenceLine y={0} stroke={MUTED} strokeDasharray="3 3" />
+                          <Bar
+                            dataKey="bias"
+                            name="Bias"
+                            radius={[0, 0, 0, 0]}
+                            maxBarSize={14}
+                            isAnimationActive={false}
+                          >
                             {daily.map((d) => (
-                              <Cell key={d.date} fill={d.bias >= 0 ? MINT : ROSE} />
+                              <Cell key={d.date} fill={d.bias >= 0 ? TEAL : RED} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -268,16 +239,14 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="Error distribution"
-              icon="histogram"
-              note="Count of settlement periods per absolute-error bin"
+              note="Count of settlement periods per absolute-error bin."
               label="Distribution of absolute forecast error"
               className="chart--match"
             >
               {histogram.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={histogram} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <BarGradient id="histogramGrad" from="#60a5fa" to="#22d3ee" />
-                    <CartesianGrid stroke={GRID} strokeDasharray="3 4" vertical={false} />
+                    <CartesianGrid stroke={GRID} strokeDasharray="1 4" vertical={false} />
                     <XAxis dataKey="bin" {...axis} interval="preserveStartEnd" minTickGap={12} />
                     <YAxis {...axis} axisLine={false} width={40} allowDecimals={false} />
                     <Tooltip
@@ -291,8 +260,9 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                     <Bar
                       dataKey="count"
                       name="Periods"
-                      fill="url(#histogramGrad)"
-                      radius={[3, 3, 0, 0]}
+                      fill={BLUE}
+                      radius={[0, 0, 0, 0]}
+                      isAnimationActive={false}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -303,8 +273,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="By hour of day"
-              icon="clock"
-              note="MAE on top; signed bias below — UTC hour"
+              note="MAE above; signed bias below (UTC hour)."
               label="Two stacked panels: mean absolute error and signed bias by hour of day"
               className="daily-split"
             >
@@ -319,12 +288,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           syncId="hourly"
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
-                          <BarGradient id="maeHourlyGrad" from="#8b5cf6" to="#60a5fa" />
-                          <CartesianGrid
-                            stroke={GRID}
-                            strokeDasharray="3 4"
-                            vertical={false}
-                          />
+                          <CartesianGrid stroke={GRID} strokeDasharray="1 4" vertical={false} />
                           <XAxis dataKey="label" hide />
                           <YAxis
                             {...axis}
@@ -343,9 +307,10 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           <Bar
                             dataKey="mae"
                             name="MAE"
-                            fill="url(#maeHourlyGrad)"
-                            radius={[3, 3, 0, 0]}
+                            fill={BLUE}
+                            radius={[0, 0, 0, 0]}
                             maxBarSize={14}
+                            isAnimationActive={false}
                           />
                         </BarChart>
                       </ResponsiveContainer>
@@ -361,11 +326,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           syncId="hourly"
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
-                          <CartesianGrid
-                            stroke={GRID}
-                            strokeDasharray="3 4"
-                            vertical={false}
-                          />
+                          <CartesianGrid stroke={GRID} strokeDasharray="1 4" vertical={false} />
                           <XAxis dataKey="label" {...axis} interval={2} />
                           <YAxis
                             {...axis}
@@ -384,14 +345,16 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                             formatter={(value) => `${mw(value, 1)} MW`}
                             labelFormatter={(label) => `${label} UTC`}
                           />
-                          <ReferenceLine
-                            y={0}
-                            stroke="rgba(196,181,253,0.42)"
-                            strokeDasharray="3 3"
-                          />
-                          <Bar dataKey="bias" name="Bias" maxBarSize={14}>
+                          <ReferenceLine y={0} stroke={MUTED} strokeDasharray="3 3" />
+                          <Bar
+                            dataKey="bias"
+                            name="Bias"
+                            radius={[0, 0, 0, 0]}
+                            maxBarSize={14}
+                            isAnimationActive={false}
+                          >
                             {byHour.map((h) => (
-                              <Cell key={h.hour} fill={h.bias >= 0 ? MINT : ROSE} />
+                              <Cell key={h.hour} fill={h.bias >= 0 ? TEAL : RED} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -406,16 +369,14 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="By forecast lead time"
-              icon="hourglass"
-              note="Forecast horizon — hours from publication to delivery"
+              note="Forecast horizon in hours from publication to delivery."
               label="Mean absolute error by forecast lead time"
               className="chart--match"
             >
               {byLead.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={byLead} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <BarGradient id="leadGrad" from="#a78bfa" to="#60a5fa" />
-                    <CartesianGrid stroke={GRID} strokeDasharray="3 4" vertical={false} />
+                    <CartesianGrid stroke={GRID} strokeDasharray="1 4" vertical={false} />
                     <XAxis dataKey="bucket" {...axis} minTickGap={8} />
                     <YAxis {...axis} axisLine={false} width={52} tickFormatter={(v) => mw(v)} />
                     <Tooltip
@@ -426,7 +387,13 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                       formatter={(value) => `${mw(value, 1)} MW`}
                       labelFormatter={(label) => `Lead time ${label}`}
                     />
-                    <Bar dataKey="mae" name="MAE" fill="url(#leadGrad)" radius={[3, 3, 0, 0]} />
+                    <Bar
+                      dataKey="mae"
+                      name="MAE"
+                      fill={TEAL}
+                      radius={[0, 0, 0, 0]}
+                      isAnimationActive={false}
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
@@ -438,12 +405,9 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
           <section className="card">
             <header className="card__head">
               <div className="card__title">
-                <span className="title-icon">
-                  <Icon name="alert" />
-                </span>
                 <h3>Worst delivery days</h3>
               </div>
-              <p>Ranked by mean absolute error — open one on the decision desk</p>
+              <p>Ranked by mean absolute error. Open a day on the decision desk.</p>
             </header>
             {worstDays.length ? (
               <div className="table-wrap table-wrap--short">
@@ -476,7 +440,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                             onClick={() => onPickDay(row.date)}
                             aria-label={`Open the decision desk for ${dateUTC(row.date)}`}
                           >
-                            Open →
+                            Open
                           </button>
                         </td>
                       </tr>
@@ -491,13 +455,8 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
           <details className="card method">
             <summary>
-              <span className="card__title">
-                <span className="title-icon">
-                  <Icon name="book" />
-                </span>
-                <span>Methodology &amp; caveats</span>
-              </span>
-              <span className="method__hint">vintage rule · QA · metrics</span>
+              <span>Methodology &amp; caveats</span>
+              <span className="method__hint">vintage rule / QA / metrics</span>
             </summary>
             <div className="method__body">
               <div>
@@ -527,14 +486,13 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                 <p>
                   error = forecast − actual. WAPE = Σ|error| / Σactual. MAPE is deliberately
                   skipped: it is undefined at zero and unstable at low wind. Unit of analysis is
-                  the settlement period — the unit the desk buys; WINDFOR is hourly and
-                  step-held.
+                  the settlement period, the unit the desk buys. WINDFOR is hourly and step-held.
                 </p>
               </div>
               <div>
                 <h4>Caveats</h4>
                 <p>
-                  Hour-of-day and lead time are collinear in this window — do not read the two
+                  Hour-of-day and lead time are collinear in this window. Do not read the two
                   charts as independent effects. Actuals are transmission-metered wind only. The
                   P90 band is in-sample: it describes January's observed misses, not a guarantee.
                   WINDFOR is NGESO's national wind forecast; FUELHH is transmission-metered. Part

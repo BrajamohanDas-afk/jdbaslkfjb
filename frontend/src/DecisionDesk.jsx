@@ -10,12 +10,13 @@ import {
   YAxis,
 } from 'recharts'
 import { agePhrase, chartTipStyle, dateUTC, duration, mw, signed, stampUTC, timeUTC } from './format'
-import Icon from './icons'
 
-const FORECAST = '#c4b5fd'
-const ACTUAL = '#34d399'
-const MUTED = '#a8b3cf'
-const GRID = 'rgba(255,255,255,0.07)'
+const FORECAST = '#D9552A'
+const ACTUAL = '#0F6B63'
+const BLUE = '#2B5F8A'
+const MUTED = '#6B7F8B'
+const GRID = '#D5DEE3'
+const MONO = "'IBM Plex Mono', monospace"
 
 function TipRow({ color, label, value }) {
   return (
@@ -40,10 +41,10 @@ function DeskTip({ active, payload }) {
       </div>
       <TipRow color={FORECAST} label="Forecast" value={`${mw(p.forecast)} MW`} />
       <TipRow color={ACTUAL} label="Actual" value={`${mw(p.actual)} MW`} />
-      <TipRow color="#a8b3cf" label="Error" value={`${signed(p.error)} MW`} />
+      <TipRow color={MUTED} label="Error" value={`${signed(p.error)} MW`} />
       {typeof p.bandLow === 'number' && (
         <TipRow
-          color="#8b5cf6"
+          color={BLUE}
           label="P90 band"
           value={`${mw(p.bandLow)} – ${mw(p.bandHigh)} MW`}
         />
@@ -70,28 +71,15 @@ export default function DecisionDesk({ day, gate, loading }) {
     <>
       <header className="section-head">
         <div>
-          <p className="eyebrow">
-            <span className="title-icon title-icon--sm">
-              <Icon name="compass" />
-            </span>
-            Decision desk
-          </p>
-          <h2 className="gradient-text">The forecast you actually had.</h2>
+          <p className="eyebrow">Decision desk</p>
+          <h2>The forecast you actually had.</h2>
           <p className="section-head__sub">
             {day
-              ? `At the ${gate.label} gate — ${gate.cutoff} — the desk saw a ${agePhrase(day.ageMinutes)} forecast, not today's.`
-              : 'The freshest forecast that was on the table at gate closure.'}
+              ? `At the ${gate.label} gate (${gate.cutoff}) the desk saw a ${agePhrase(day.ageMinutes)} forecast. Not today's.`
+              : 'The forecast in force at gate closure.'}
           </p>
         </div>
-        <div className="section-head__chips">
-          {day?.date && <span className="chip">{dateUTC(day.date)}</span>}
-          {day && (
-            <span className="chip chip--live">
-              <span className="live-dot" aria-hidden="true" />
-              {duration(day.ageMinutes)} old at gate
-            </span>
-          )}
-        </div>
+        {day?.date && <div className="section-head__meta">{dateUTC(day.date)}</div>}
       </header>
 
       {loading && !day ? (
@@ -104,41 +92,21 @@ export default function DecisionDesk({ day, gate, loading }) {
         <>
           <div className="facts">
             <div className="fact">
-              <span className="fact__label">
-                <span className="title-icon title-icon--sm">
-                  <Icon name="bolt" />
-                </span>
-                Gate
-              </span>
+              <span className="fact__label">Gate</span>
               <b>
                 {gate.label} · {day.gate?.cutoff ? `${timeUTC(day.gate.cutoff)}Z` : gate.cutoff}
               </b>
             </div>
             <div className="fact">
-              <span className="fact__label">
-                <span className="title-icon title-icon--sm">
-                  <Icon name="clock" />
-                </span>
-                Forecast published
-              </span>
+              <span className="fact__label">Forecast published</span>
               <b>{stampUTC(day.publishTime)}</b>
             </div>
             <div className="fact">
-              <span className="fact__label">
-                <span className="title-icon title-icon--sm">
-                  <Icon name="timer" />
-                </span>
-                Age at gate
-              </span>
+              <span className="fact__label">Age at gate</span>
               <b>{duration(day.ageMinutes)}</b>
             </div>
             <div className="fact">
-              <span className="fact__label">
-                <span className="title-icon title-icon--sm">
-                  <Icon name="grid" />
-                </span>
-                Settlement periods
-              </span>
+              <span className="fact__label">Settlement periods</span>
               <b>{periods.length} × 30 min</b>
             </div>
           </div>
@@ -146,12 +114,9 @@ export default function DecisionDesk({ day, gate, loading }) {
           <section className="card">
             <header className="card__head">
               <div className="card__title">
-                <span className="title-icon">
-                  <Icon name="bolt" />
-                </span>
                 <h3>Forecast vs actual</h3>
               </div>
-              <p>In-sample P90 error band from January's gate-time misses</p>
+              <p>In-sample P90 error band from January's gate-time misses.</p>
             </header>
             <div
               className="chart chart--tall"
@@ -161,21 +126,34 @@ export default function DecisionDesk({ day, gate, loading }) {
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="p90BandGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.32} />
-                      <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.04} />
-                    </linearGradient>
+                    <pattern
+                      id="bandHatch"
+                      width="6"
+                      height="6"
+                      patternTransform="rotate(45)"
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <line
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="6"
+                        stroke={BLUE}
+                        strokeWidth="1"
+                        opacity="0.45"
+                      />
+                    </pattern>
                   </defs>
-                  <CartesianGrid stroke={GRID} strokeDasharray="3 4" vertical={false} />
+                  <CartesianGrid stroke={GRID} strokeDasharray="1 4" vertical={false} />
                   <XAxis
                     dataKey="label"
                     interval={5}
-                    tick={{ fill: MUTED, fontSize: 11 }}
+                    tick={{ fill: MUTED, fontSize: 10, fontFamily: MONO }}
                     tickLine={false}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.11)' }}
+                    axisLine={{ stroke: '#B9C6CE' }}
                   />
                   <YAxis
-                    tick={{ fill: MUTED, fontSize: 11 }}
+                    tick={{ fill: MUTED, fontSize: 10, fontFamily: MONO }}
                     tickLine={false}
                     axisLine={false}
                     width={52}
@@ -184,11 +162,12 @@ export default function DecisionDesk({ day, gate, loading }) {
                       value: 'MW',
                       angle: -90,
                       position: 'insideLeft',
-                      fill: '#7c89a8',
-                      fontSize: 11,
+                      fill: MUTED,
+                      fontSize: 10,
+                      fontFamily: MONO,
                     }}
                   />
-                  <Tooltip content={<DeskTip />} cursor={{ stroke: 'rgba(196,181,253,0.38)' }} />
+                  <Tooltip content={<DeskTip />} cursor={false} />
                   {hasBand && (
                     <Area
                       type="monotone"
@@ -209,7 +188,7 @@ export default function DecisionDesk({ day, gate, loading }) {
                       stackId="band"
                       name="P90 band"
                       stroke="none"
-                      fill="url(#p90BandGrad)"
+                      fill="url(#bandHatch)"
                       fillOpacity={1}
                       isAnimationActive={false}
                       legendType="none"
@@ -221,20 +200,24 @@ export default function DecisionDesk({ day, gate, loading }) {
                     dataKey="forecast"
                     name="Forecast"
                     stroke={FORECAST}
-                    strokeWidth={2.2}
+                    strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4 }}
+                    isAnimationActive={false}
                   />
                   <Line
                     type="monotone"
                     dataKey="actual"
                     name="Actual"
                     stroke={ACTUAL}
-                    strokeWidth={2.2}
+                    strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4 }}
+                    isAnimationActive={false}
                   />
-                  <Legend wrapperStyle={{ fontSize: 12, color: MUTED }} />
+                  <Legend
+                    wrapperStyle={{ fontSize: 10, fontFamily: MONO, color: '#334A58' }}
+                  />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -243,12 +226,9 @@ export default function DecisionDesk({ day, gate, loading }) {
           <section className="card">
             <header className="card__head">
               <div className="card__title">
-                <span className="title-icon">
-                  <Icon name="grid" />
-                </span>
                 <h3>Settlement-period detail</h3>
               </div>
-              <p>Forecast minus actual; positive means the forecast ran high</p>
+              <p>Forecast minus actual. Positive means the forecast ran high.</p>
             </header>
             <div className="table-wrap">
               <table>
@@ -266,7 +246,7 @@ export default function DecisionDesk({ day, gate, loading }) {
                     <th scope="col" className="num">
                       Error
                     </th>
-                    <th scope="col" className="num">
+                    <th scope="col" className="num col-optional">
                       P90 band
                     </th>
                   </tr>
@@ -281,7 +261,7 @@ export default function DecisionDesk({ day, gate, loading }) {
                       <td className={`num ${p.error > 0 ? 'over' : p.error < 0 ? 'under' : ''}`}>
                         {signed(p.error)}
                       </td>
-                      <td className="num dim">
+                      <td className="num dim col-optional">
                         {mw(p.bandLow)} – {mw(p.bandHigh)}
                       </td>
                     </tr>

@@ -5,10 +5,10 @@ const num = (min, max) =>
   })
 
 export const mw = (value, digits = 0) =>
-  typeof value === 'number' && Number.isFinite(value) ? num(digits, digits).format(value) : '—'
+  typeof value === 'number' && Number.isFinite(value) ? num(digits, digits).format(value) : '-'
 
 export const signed = (value, digits = 0) => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-'
   const body = num(digits, digits).format(Math.abs(value))
   return `${value > 0 ? '+' : value < 0 ? '−' : ''}${body}`
 }
@@ -17,19 +17,19 @@ export const signed = (value, digits = 0) => {
 export const percent = (value, digits = 1) =>
   typeof value === 'number' && Number.isFinite(value)
     ? `${num(digits, digits).format(value)}%`
-    : '—'
+    : '-'
 
 export const timeUTC = (iso) => {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '-'
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
 }
 
 export const dateUTC = (iso) => {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const d = new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
@@ -40,16 +40,16 @@ export const dateUTC = (iso) => {
 }
 
 export const shortDate = (iso) => {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const d = new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
 export const monthDate = (iso) => {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const d = new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -59,9 +59,9 @@ export const monthDate = (iso) => {
 }
 
 export const stampUTC = (iso) => {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '-'
   return `${d.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -70,7 +70,7 @@ export const stampUTC = (iso) => {
 }
 
 export const duration = (minutes) => {
-  if (typeof minutes !== 'number' || !Number.isFinite(minutes)) return '—'
+  if (typeof minutes !== 'number' || !Number.isFinite(minutes)) return '-'
   if (minutes < 60) return `${Math.round(minutes)} min`
   const h = Math.floor(minutes / 60)
   const m = Math.round(minutes % 60)
@@ -83,7 +83,7 @@ export const agePhrase = (minutes) => {
 }
 
 export const count = (value) =>
-  typeof value === 'number' && Number.isFinite(value) ? num(0, 0).format(value) : '—'
+  typeof value === 'number' && Number.isFinite(value) ? num(0, 0).format(value) : '-'
 
 /** meta.exclusions is not pinned by the contract; render common shapes, ignore the rest. */
 export const exclusionText = (value) => {
@@ -106,15 +106,15 @@ export const exclusionText = (value) => {
 }
 
 export const chartTipStyle = {
-  background: 'rgba(12,8,30,0.92)',
-  border: '1px solid rgba(196,181,253,0.3)',
-  borderRadius: 12,
-  backdropFilter: 'blur(16px)',
-  padding: '9px 12px',
-  color: '#f8fafc',
-  fontSize: 12,
-  boxShadow: '0 18px 44px rgba(0,0,0,0.45)',
+  background: '#F4F6F7',
+  border: '1px solid #7E949F',
+  borderRadius: 2,
+  padding: '7px 9px',
+  color: '#10222E',
+  fontFamily: "'IBM Plex Mono', monospace",
+  fontSize: 11,
+  boxShadow: 'none',
 }
 
-export const chartTipLabel = { color: '#a8b3cf', marginBottom: 4 }
-export const chartTipItem = { color: '#f8fafc' }
+export const chartTipLabel = { color: '#6B7F8B', marginBottom: 3 }
+export const chartTipItem = { color: '#10222E' }
