@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getDay, getDays, getMeta, getSummary } from './api'
 import DecisionDesk from './DecisionDesk'
 import Accuracy from './Accuracy'
+import Icon from './icons'
 import { dateUTC, exclusionText, monthDate } from './format'
 
 const GATES = [
@@ -82,8 +83,8 @@ export default function App() {
   const window = meta?.window
   const windowText =
     window?.delivery_from && window?.delivery_to
-      ? `${monthDate(window.delivery_from)} → ${monthDate(window.delivery_to)}`
-      : '2 Jan → 1 Feb 2026'
+      ? `${monthDate(window.delivery_from)} — ${monthDate(window.delivery_to)}`
+      : '2 Jan — 1 Feb 2026'
 
   const pickDay = (nextDate) => {
     setError('')
@@ -93,71 +94,86 @@ export default function App() {
 
   return (
     <>
-      <a className="skip" href="#main">
-        Skip to content
-      </a>
+      <div className="halo" aria-hidden="true" />
+      <div className="page">
+        <a className="skip" href="#main">
+          Skip to content
+        </a>
 
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand__mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" width="28" height="28">
-              <path
-                d="M4 11h15a4 4 0 1 0-4-4M4 17h21a4 4 0 1 1-4 4M4 23h10"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
-          <div>
-            <div className="brand__name">Gale Desk</div>
-            <div className="brand__sub">NGESO wind · Jan 2026 replay</div>
+        <header className="topbar-shell">
+          <div className="topbar">
+            <div className="brand">
+              <span className="brand__mark" aria-hidden="true">
+                <svg viewBox="0 0 32 32" width="28" height="28">
+                  <path
+                    d="M4 11h15a4 4 0 1 0-4-4M4 17h21a4 4 0 1 1-4 4M4 23h10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+              <div className="brand__text">
+                <div className="brand__name gradient-text">Gale Desk</div>
+                <div className="brand__sub">NGESO wind — January 2026 replay</div>
+              </div>
+              <span className="intro-pill">
+                <Icon name="sparkle" size={13} />
+                Introducing · Jan 2026 pilot
+              </span>
+            </div>
+
+            <div className="topbar__right">
+              <span className="status">
+                <span className="live-dot live-dot--static" aria-hidden="true" />
+                Data verified — Jan 2026
+              </span>
+
+              <div className="controls">
+                <div className="seg" role="group" aria-label="Auction gate">
+                  {GATES.map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      className="seg__btn"
+                      aria-pressed={gate === g.id}
+                      onClick={() => {
+                        setError('')
+                        setGate(g.id)
+                      }}
+                    >
+                      {g.label}
+                      <span>{g.cutoff}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <label className="date-pick">
+                  <span>Delivery day</span>
+                  <select
+                    value={date}
+                    onChange={(e) => {
+                      setError('')
+                      setDate(e.target.value)
+                    }}
+                    disabled={!days.length}
+                  >
+                    {days.length ? (
+                      days.map((d) => (
+                        <option key={d} value={d}>
+                          {dateUTC(d)}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No days loaded</option>
+                    )}
+                  </select>
+                </label>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className="controls">
-          <div className="seg" role="group" aria-label="Auction gate">
-            {GATES.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                className="seg__btn"
-                aria-pressed={gate === g.id}
-                onClick={() => {
-                  setError('')
-                  setGate(g.id)
-                }}
-              >
-                {g.label}
-                <span>{g.cutoff}</span>
-              </button>
-            ))}
-          </div>
-
-          <label className="date-pick">
-            <span>Delivery day</span>
-            <select
-              value={date}
-              onChange={(e) => {
-                setError('')
-                setDate(e.target.value)
-              }}
-              disabled={!days.length}
-            >
-              {days.length ? (
-                days.map((d) => (
-                  <option key={d} value={d}>
-                    {dateUTC(d)}
-                  </option>
-                ))
-              ) : (
-                <option value="">No days loaded</option>
-              )}
-            </select>
-          </label>
-        </div>
-      </header>
+        </header>
 
       <div className="tabbar">
         <nav className="tabs" role="tablist" aria-label="Views">
@@ -184,7 +200,7 @@ export default function App() {
             Forecast accuracy
           </button>
         </nav>
-        <p className="tabbar__note">We present NGESO's forecast and measure it. We do not generate one.</p>
+        <p className="tabbar__note">We present NGESO's forecast and measure it — we do not generate one.</p>
       </div>
 
       {error && (
@@ -229,11 +245,10 @@ export default function App() {
           </a>{' '}
           FUELHH actuals + WINDFOR forecasts
         </span>
-        <span>
-          Window {windowText} · gates 09:20Z EPEX / 09:50Z N2EX
-        </span>
+        <span>Window {windowText} · gates 09:20Z EPEX / 09:50Z N2EX</span>
         {summary && <span>QA exclusions — {exclusions || 'none'}</span>}
       </footer>
+      </div>
     </>
   )
 }

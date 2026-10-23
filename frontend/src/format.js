@@ -106,14 +106,15 @@ export const exclusionText = (value) => {
 }
 
 export const chartTipStyle = {
-  background: '#101b2d',
-  border: '1px solid #2a3d57',
-  borderRadius: 10,
-  padding: '8px 10px',
-  color: '#e6edf6',
+  background: 'rgba(12,8,30,0.92)',
+  border: '1px solid rgba(196,181,253,0.3)',
+  borderRadius: 12,
+  backdropFilter: 'blur(16px)',
+  padding: '9px 12px',
+  color: '#f8fafc',
   fontSize: 12,
-  boxShadow: '0 12px 30px rgba(0, 0, 0, 0.35)',
+  boxShadow: '0 18px 44px rgba(0,0,0,0.45)',
 }
 
-export const chartTipLabel = { color: '#9fb2ca', marginBottom: 4 }
-export const chartTipItem = { color: '#e6edf6' }
+export const chartTipLabel = { color: '#a8b3cf', marginBottom: 4 }
+export const chartTipItem = { color: '#f8fafc' }

@@ -21,15 +21,28 @@ import {
   shortDate,
   signed,
 } from './format'
+import Icon from './icons'
 
-const FORECAST = '#fbbf24'
-const ACTUAL = '#2dd4bf'
-const MUTED = '#8fa3bc'
+const MINT = '#34d399'
+const ROSE = '#fb7185'
+const MUTED = '#a8b3cf'
+const GRID = 'rgba(255,255,255,0.07)'
 
 const axis = {
   tick: { fill: MUTED, fontSize: 11 },
   tickLine: false,
-  axisLine: { stroke: '#24344b' },
+  axisLine: { stroke: 'rgba(255,255,255,0.11)' },
+}
+
+function BarGradient({ id, from, to }) {
+  return (
+    <defs>
+      <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={from} />
+        <stop offset="100%" stopColor={to} />
+      </linearGradient>
+    </defs>
+  )
 }
 
 function biasScale(values) {
@@ -42,11 +55,18 @@ function biasScale(values) {
   }
 }
 
-function ChartCard({ title, note, label, className, children }) {
+function ChartCard({ title, note, label, className, icon, children }) {
   return (
     <section className="card">
       <header className="card__head">
-        <h3>{title}</h3>
+        <div className="card__title">
+          {icon && (
+            <span className="title-icon">
+              <Icon name={icon} />
+            </span>
+          )}
+          <h3>{title}</h3>
+        </div>
         {note && <p>{note}</p>}
       </header>
       <div className={`chart ${className || ''}`} role="img" aria-label={label}>
@@ -87,15 +107,23 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
     <>
       <header className="section-head">
         <div>
-          <h2>Forecast accuracy</h2>
-          <p>
-            Every settlement period we actually saw at the {gate.label} gate, scored against
-            metered wind.
+          <p className="eyebrow">
+            <span className="title-icon title-icon--sm">
+              <Icon name="activity" />
+            </span>
+            Forecast accuracy
+          </p>
+          <h2 className="gradient-text">How wrong was January?</h2>
+          <p className="section-head__sub">
+            Every settlement period the desk could have bought — scored against metered wind at
+            the {gate.label} gate.
           </p>
         </div>
-        <span className="chip">
-          {gate.label} · {gate.cutoff}
-        </span>
+        <div className="section-head__chips">
+          <span className="chip">
+            {gate.label} · {gate.cutoff}
+          </span>
+        </div>
       </header>
 
       {loading && !summary ? (
@@ -124,7 +152,8 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
           <div className="grid">
             <ChartCard
               title="Daily error"
-              note="MAE on top; signed bias below — teal ran high, red ran low"
+              icon="bar-chart"
+              note="MAE on top; signed bias below — mint ran high, rose ran low"
               label="Two stacked panels: daily mean absolute error bars and signed bias bars"
               className="daily-split"
             >
@@ -139,8 +168,9 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           syncId="daily"
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
+                          <BarGradient id="maeDailyGrad" from="#8b5cf6" to="#60a5fa" />
                           <CartesianGrid
-                            stroke="#1e2c40"
+                            stroke={GRID}
                             strokeDasharray="3 4"
                             vertical={false}
                           />
@@ -166,7 +196,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           <Bar
                             dataKey="mae"
                             name="MAE"
-                            fill={FORECAST}
+                            fill="url(#maeDailyGrad)"
                             radius={[3, 3, 0, 0]}
                             maxBarSize={14}
                           />
@@ -185,7 +215,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
                           <CartesianGrid
-                            stroke="#1e2c40"
+                            stroke={GRID}
                             strokeDasharray="3 4"
                             vertical={false}
                           />
@@ -216,13 +246,14 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                                 : label
                             }
                           />
-                          <ReferenceLine y={0} stroke="#5b7290" strokeDasharray="3 3" />
+                          <ReferenceLine
+                            y={0}
+                            stroke="rgba(196,181,253,0.42)"
+                            strokeDasharray="3 3"
+                          />
                           <Bar dataKey="bias" name="Bias" maxBarSize={14}>
                             {daily.map((d) => (
-                              <Cell
-                                key={d.date}
-                                fill={d.bias >= 0 ? ACTUAL : '#f87171'}
-                              />
+                              <Cell key={d.date} fill={d.bias >= 0 ? MINT : ROSE} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -237,13 +268,16 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="Error distribution"
+              icon="histogram"
               note="Count of settlement periods per absolute-error bin"
               label="Distribution of absolute forecast error"
+              className="chart--match"
             >
               {histogram.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={histogram} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2c40" strokeDasharray="3 4" vertical={false} />
+                    <BarGradient id="histogramGrad" from="#60a5fa" to="#22d3ee" />
+                    <CartesianGrid stroke={GRID} strokeDasharray="3 4" vertical={false} />
                     <XAxis dataKey="bin" {...axis} interval="preserveStartEnd" minTickGap={12} />
                     <YAxis {...axis} axisLine={false} width={40} allowDecimals={false} />
                     <Tooltip
@@ -254,7 +288,12 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                       formatter={(value) => [count(value), 'Settlement periods']}
                       labelFormatter={(label) => `|error| ${label} MW`}
                     />
-                    <Bar dataKey="count" name="Periods" fill={ACTUAL} radius={[3, 3, 0, 0]} />
+                    <Bar
+                      dataKey="count"
+                      name="Periods"
+                      fill="url(#histogramGrad)"
+                      radius={[3, 3, 0, 0]}
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
@@ -264,6 +303,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="By hour of day"
+              icon="clock"
               note="MAE on top; signed bias below — UTC hour"
               label="Two stacked panels: mean absolute error and signed bias by hour of day"
               className="daily-split"
@@ -279,8 +319,9 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           syncId="hourly"
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
+                          <BarGradient id="maeHourlyGrad" from="#8b5cf6" to="#60a5fa" />
                           <CartesianGrid
-                            stroke="#1e2c40"
+                            stroke={GRID}
                             strokeDasharray="3 4"
                             vertical={false}
                           />
@@ -302,7 +343,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           <Bar
                             dataKey="mae"
                             name="MAE"
-                            fill={FORECAST}
+                            fill="url(#maeHourlyGrad)"
                             radius={[3, 3, 0, 0]}
                             maxBarSize={14}
                           />
@@ -321,7 +362,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                         >
                           <CartesianGrid
-                            stroke="#1e2c40"
+                            stroke={GRID}
                             strokeDasharray="3 4"
                             vertical={false}
                           />
@@ -343,13 +384,14 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                             formatter={(value) => `${mw(value, 1)} MW`}
                             labelFormatter={(label) => `${label} UTC`}
                           />
-                          <ReferenceLine y={0} stroke="#5b7290" strokeDasharray="3 3" />
+                          <ReferenceLine
+                            y={0}
+                            stroke="rgba(196,181,253,0.42)"
+                            strokeDasharray="3 3"
+                          />
                           <Bar dataKey="bias" name="Bias" maxBarSize={14}>
                             {byHour.map((h) => (
-                              <Cell
-                                key={h.hour}
-                                fill={h.bias >= 0 ? ACTUAL : '#f87171'}
-                              />
+                              <Cell key={h.hour} fill={h.bias >= 0 ? MINT : ROSE} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -364,13 +406,16 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="By forecast lead time"
+              icon="hourglass"
               note="Forecast horizon — hours from publication to delivery"
               label="Mean absolute error by forecast lead time"
+              className="chart--match"
             >
               {byLead.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={byLead} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2c40" strokeDasharray="3 4" vertical={false} />
+                    <BarGradient id="leadGrad" from="#a78bfa" to="#60a5fa" />
+                    <CartesianGrid stroke={GRID} strokeDasharray="3 4" vertical={false} />
                     <XAxis dataKey="bucket" {...axis} minTickGap={8} />
                     <YAxis {...axis} axisLine={false} width={52} tickFormatter={(v) => mw(v)} />
                     <Tooltip
@@ -381,7 +426,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                       formatter={(value) => `${mw(value, 1)} MW`}
                       labelFormatter={(label) => `Lead time ${label}`}
                     />
-                    <Bar dataKey="mae" name="MAE" fill={ACTUAL} radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="mae" name="MAE" fill="url(#leadGrad)" radius={[3, 3, 0, 0]} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
@@ -392,7 +437,12 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
           <section className="card">
             <header className="card__head">
-              <h3>Worst delivery days</h3>
+              <div className="card__title">
+                <span className="title-icon">
+                  <Icon name="alert" />
+                </span>
+                <h3>Worst delivery days</h3>
+              </div>
               <p>Ranked by mean absolute error — open one on the decision desk</p>
             </header>
             {worstDays.length ? (
@@ -441,7 +491,12 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
           <details className="card method">
             <summary>
-              <span>Methodology &amp; caveats</span>
+              <span className="card__title">
+                <span className="title-icon">
+                  <Icon name="book" />
+                </span>
+                <span>Methodology &amp; caveats</span>
+              </span>
               <span className="method__hint">vintage rule · QA · metrics</span>
             </summary>
             <div className="method__body">
