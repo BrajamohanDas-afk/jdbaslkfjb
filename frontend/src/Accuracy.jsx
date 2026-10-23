@@ -1,9 +1,12 @@
 import {
   Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -31,14 +34,14 @@ const axis = {
   axisLine: { stroke: '#24344b' },
 }
 
-function ChartCard({ title, note, label, children }) {
+function ChartCard({ title, note, label, className, children }) {
   return (
     <section className="card">
       <header className="card__head">
         <h3>{title}</h3>
         {note && <p>{note}</p>}
       </header>
-      <div className="chart" role="img" aria-label={label}>
+      <div className={`chart ${className || ''}`} role="img" aria-label={label}>
         {children}
       </div>
     </section>
@@ -69,6 +72,11 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
   const byLead = summary?.byLead || []
   const worstDays = summary?.worstDays || []
   const hasDaily = daily.length > 0
+  const biasValues = daily.map((d) => d.bias)
+  const biasMax = Math.max(1000, Math.ceil(Math.max(0, ...biasValues) / 1000) * 1000)
+  const biasMin = Math.min(-1000, Math.floor(Math.min(0, ...biasValues) / 1000) * 1000)
+  const biasMid = Math.round(biasMax / 2 / 500) * 500
+  const biasTicks = [...new Set([biasMin, 0, biasMid, biasMax])].sort((a, b) => a - b)
 
   return (
     <>
@@ -111,47 +119,110 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
           <div className="grid">
             <ChartCard
               title="Daily error"
-              note="MAE bars, bias line — click a day in the table below to inspect it"
-              label="Daily mean absolute error bars with bias line"
+              note="MAE on top; signed bias below — teal ran high, red ran low"
+              label="Two stacked panels: daily mean absolute error bars and signed bias bars"
+              className="daily-split"
             >
               {hasDaily ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={daily} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2c40" strokeDasharray="3 4" vertical={false} />
-                    <XAxis dataKey="label" {...axis} interval="preserveStartEnd" minTickGap={18} />
-                    <YAxis
-                      {...axis}
-                      axisLine={false}
-                      width={52}
-                      tickFormatter={(v) => mw(v)}
-                    />
-                    <Tooltip
-                      contentStyle={chartTipStyle}
-                      labelStyle={chartTipLabel}
-                      itemStyle={chartTipItem}
-                      formatter={(value) => `${mw(value, 1)} MW`}
-                      labelFormatter={(label, payload) =>
-                        payload?.[0]?.payload?.date ? dateUTC(payload[0].payload.date) : label
-                      }
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12, color: '#c6d3e4' }} />
-                    <Bar
-                      dataKey="mae"
-                      name="MAE"
-                      fill={FORECAST}
-                      radius={[3, 3, 0, 0]}
-                      maxBarSize={22}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="bias"
-                      name="Bias"
-                      stroke={ACTUAL}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
+                <>
+                  <div className="daily-split__panel">
+                    <span className="daily-split__label">MAE · MW</span>
+                    <div className="daily-split__plot">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={daily}
+                          syncId="daily"
+                          margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            stroke="#1e2c40"
+                            strokeDasharray="3 4"
+                            vertical={false}
+                          />
+                          <XAxis dataKey="label" hide />
+                          <YAxis
+                            {...axis}
+                            axisLine={false}
+                            width={52}
+                            tickFormatter={(v) => mw(v)}
+                          />
+                          <Tooltip
+                            contentStyle={chartTipStyle}
+                            labelStyle={chartTipLabel}
+                            itemStyle={chartTipItem}
+                            formatter={(value) => `${mw(value, 1)} MW`}
+                            labelFormatter={(label, payload) =>
+                              payload?.[0]?.payload?.date
+                                ? dateUTC(payload[0].payload.date)
+                                : label
+                            }
+                          />
+                          <Bar
+                            dataKey="mae"
+                            name="MAE"
+                            fill={FORECAST}
+                            radius={[3, 3, 0, 0]}
+                            maxBarSize={14}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="daily-split__panel">
+                    <span className="daily-split__label">Bias · MW · positive = ran high</span>
+                    <div className="daily-split__plot">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={daily}
+                          syncId="daily"
+                          margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            stroke="#1e2c40"
+                            strokeDasharray="3 4"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="label"
+                            {...axis}
+                            interval="preserveStartEnd"
+                            minTickGap={18}
+                          />
+                          <YAxis
+                            {...axis}
+                            axisLine={false}
+                            width={52}
+                            tickFormatter={(v) => mw(v)}
+                            domain={[biasMin, biasMax]}
+                            ticks={biasTicks}
+                            interval={0}
+                          />
+                          <Tooltip
+                            contentStyle={chartTipStyle}
+                            labelStyle={chartTipLabel}
+                            itemStyle={chartTipItem}
+                            formatter={(value) => `${mw(value, 1)} MW`}
+                            labelFormatter={(label, payload) =>
+                              payload?.[0]?.payload?.date
+                                ? dateUTC(payload[0].payload.date)
+                                : label
+                            }
+                          />
+                          <ReferenceLine y={0} stroke="#5b7290" strokeDasharray="3 3" />
+                          <Bar dataKey="bias" name="Bias" maxBarSize={14}>
+                            {daily.map((d) => (
+                              <Cell
+                                key={d.date}
+                                fill={d.bias >= 0 ? ACTUAL : '#f87171'}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <p className="empty">No daily breakdown.</p>
               )}
@@ -220,7 +291,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="By forecast lead time"
-              note="How old the forecast was when the gate closed"
+              note="Forecast horizon — hours from publication to delivery"
               label="Mean absolute error by forecast lead time"
             >
               {byLead.length ? (
@@ -318,16 +389,17 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
               <div>
                 <h4>QA exclusions</h4>
                 <p>
-                  Half-hours where every fuel is zero are outages, not lulls. Missing actuals,
-                  missing forecast hours and over-age vintages are dropped and counted.
+                  Zero or missing actuals are excluded and counted; the footer shows the count for
+                  this window.
                 </p>
               </div>
               <div>
                 <h4>Metrics</h4>
                 <p>
                   error = forecast − actual. WAPE = Σ|error| / Σactual. MAPE is deliberately
-                  skipped: it is undefined at zero and unstable at low wind. The hourly
-                  sensitivity view is not shown as a separate score.
+                  skipped: it is undefined at zero and unstable at low wind. Unit of analysis is
+                  the settlement period — the unit the desk buys; WINDFOR is hourly and
+                  step-held.
                 </p>
               </div>
               <div>
@@ -336,6 +408,8 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                   Hour-of-day and lead time are collinear in this window — do not read the two
                   charts as independent effects. Actuals are transmission-metered wind only. The
                   P90 band is in-sample: it describes January's observed misses, not a guarantee.
+                  WINDFOR is NGESO's national wind forecast; FUELHH is transmission-metered. Part
+                  of the +1.73 GW mean bias may be a scope difference, not forecast skill.
                 </p>
               </div>
             </div>

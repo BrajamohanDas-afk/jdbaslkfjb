@@ -109,7 +109,7 @@ export default function DecisionDesk({ day, gate, loading }) {
           <section className="card">
             <header className="card__head">
               <h3>Forecast vs actual</h3>
-              <p>P90 error band from January's gate-time misses</p>
+              <p>In-sample P90 error band from January's gate-time misses</p>
             </header>
             <div
               className="chart chart--tall"

@@ -372,6 +372,11 @@ main {
   height: 360px;
 }
 
+.chart.daily-split { height: 340px; display: grid; grid-template-rows: 1.7fr 1.1fr; gap: 10px; }
+.daily-split__panel { display: flex; flex-direction: column; min-height: 0; }
+.daily-split__label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8fa3bc; margin-bottom: 2px; }
+.daily-split__plot { flex: 1; min-height: 0; }
+
 .kpis {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
