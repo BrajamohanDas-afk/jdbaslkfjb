@@ -4,7 +4,7 @@ A day-ahead wind forecast desk for a UK electricity supplier. January 2026 repla
 
 Gale Desk does **not** predict wind and does **not** calculate procurement. NGESO publishes the wind forecast; this app shows the forecast that was genuinely available when the desk had to buy, then quantifies how wrong those forecasts were.
 
-**Live demo:** _pending Vercel deployment._
+**Live demo:** <https://app-indol-eta-96.vercel.app>
 
 ![Decision desk](docs/decision-desk.png)
 
@@ -183,13 +183,17 @@ Backend tests cover vintage selection, no look-ahead over 31 days × 2 gates, st
 
 ## Deployment
 
-Heroku has no free tier (Eco dyno is paid), so the deployment target is **Vercel**:
+Heroku has no free tier (Eco dyno is paid), so the app is deployed on **Vercel**:
 
-- React static build
-- FastAPI as a Vercel Python service
-- the `Dockerfile` remains the reproducible single-container build for any Docker host
+**https://app-indol-eta-96.vercel.app**
 
-_Live URL: pending._
+One Vercel project with two services, configured in `vercel.json`:
+
+- `frontend/` builds the Vite app
+- `backend/` runs FastAPI as a Python service
+- `/api/*` rewrites to the backend; every other path serves the frontend
+
+The `Dockerfile` remains the reproducible single-container build for any Docker host.
 
 ## Scope and non-goals
 
