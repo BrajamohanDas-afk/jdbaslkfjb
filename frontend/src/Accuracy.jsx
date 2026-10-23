@@ -4,8 +4,6 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
-  Legend,
-  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -32,6 +30,16 @@ const axis = {
   tick: { fill: MUTED, fontSize: 11 },
   tickLine: false,
   axisLine: { stroke: '#24344b' },
+}
+
+function biasScale(values) {
+  const max = Math.max(1000, Math.ceil(Math.max(0, ...values) / 1000) * 1000)
+  const min = Math.min(-1000, Math.floor(Math.min(0, ...values) / 1000) * 1000)
+  const mid = Math.round(max / 2 / 500) * 500
+  return {
+    domain: [min, max],
+    ticks: [...new Set([min, 0, mid, max])].sort((a, b) => a - b),
+  }
 }
 
 function ChartCard({ title, note, label, className, children }) {
@@ -72,11 +80,8 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
   const byLead = summary?.byLead || []
   const worstDays = summary?.worstDays || []
   const hasDaily = daily.length > 0
-  const biasValues = daily.map((d) => d.bias)
-  const biasMax = Math.max(1000, Math.ceil(Math.max(0, ...biasValues) / 1000) * 1000)
-  const biasMin = Math.min(-1000, Math.floor(Math.min(0, ...biasValues) / 1000) * 1000)
-  const biasMid = Math.round(biasMax / 2 / 500) * 500
-  const biasTicks = [...new Set([biasMin, 0, biasMid, biasMax])].sort((a, b) => a - b)
+  const dailyBias = biasScale(daily.map((d) => d.bias))
+  const hourlyBias = biasScale(byHour.map((h) => h.bias))
 
   return (
     <>
@@ -147,6 +152,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                             tickFormatter={(v) => mw(v)}
                           />
                           <Tooltip
+                            cursor={false}
                             contentStyle={chartTipStyle}
                             labelStyle={chartTipLabel}
                             itemStyle={chartTipItem}
@@ -194,11 +200,12 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                             axisLine={false}
                             width={52}
                             tickFormatter={(v) => mw(v)}
-                            domain={[biasMin, biasMax]}
-                            ticks={biasTicks}
+                            domain={dailyBias.domain}
+                            ticks={dailyBias.ticks}
                             interval={0}
                           />
                           <Tooltip
+                            cursor={false}
                             contentStyle={chartTipStyle}
                             labelStyle={chartTipLabel}
                             itemStyle={chartTipItem}
@@ -240,6 +247,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                     <XAxis dataKey="bin" {...axis} interval="preserveStartEnd" minTickGap={12} />
                     <YAxis {...axis} axisLine={false} width={40} allowDecimals={false} />
                     <Tooltip
+                      cursor={false}
                       contentStyle={chartTipStyle}
                       labelStyle={chartTipLabel}
                       itemStyle={chartTipItem}
@@ -256,34 +264,99 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
 
             <ChartCard
               title="By hour of day"
-              note="UTC hour — MAE bars, bias line"
-              label="Mean absolute error and bias by hour of day"
+              note="MAE on top; signed bias below — UTC hour"
+              label="Two stacked panels: mean absolute error and signed bias by hour of day"
+              className="daily-split"
             >
               {byHour.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={byHour} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2c40" strokeDasharray="3 4" vertical={false} />
-                    <XAxis dataKey="label" {...axis} interval={3} />
-                    <YAxis {...axis} axisLine={false} width={52} tickFormatter={(v) => mw(v)} />
-                    <Tooltip
-                      contentStyle={chartTipStyle}
-                      labelStyle={chartTipLabel}
-                      itemStyle={chartTipItem}
-                      formatter={(value) => `${mw(value, 1)} MW`}
-                      labelFormatter={(label) => `${label} UTC`}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12, color: '#c6d3e4' }} />
-                    <Bar dataKey="mae" name="MAE" fill={FORECAST} radius={[3, 3, 0, 0]} />
-                    <Line
-                      type="monotone"
-                      dataKey="bias"
-                      name="Bias"
-                      stroke={ACTUAL}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
+                <>
+                  <div className="daily-split__panel">
+                    <span className="daily-split__label">MAE · MW</span>
+                    <div className="daily-split__plot">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={byHour}
+                          syncId="hourly"
+                          margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            stroke="#1e2c40"
+                            strokeDasharray="3 4"
+                            vertical={false}
+                          />
+                          <XAxis dataKey="label" hide />
+                          <YAxis
+                            {...axis}
+                            axisLine={false}
+                            width={52}
+                            tickFormatter={(v) => mw(v)}
+                          />
+                          <Tooltip
+                            cursor={false}
+                            contentStyle={chartTipStyle}
+                            labelStyle={chartTipLabel}
+                            itemStyle={chartTipItem}
+                            formatter={(value) => `${mw(value, 1)} MW`}
+                            labelFormatter={(label) => `${label} UTC`}
+                          />
+                          <Bar
+                            dataKey="mae"
+                            name="MAE"
+                            fill={FORECAST}
+                            radius={[3, 3, 0, 0]}
+                            maxBarSize={14}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="daily-split__panel">
+                    <span className="daily-split__label">Bias · MW · positive = ran high</span>
+                    <div className="daily-split__plot">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={byHour}
+                          syncId="hourly"
+                          margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            stroke="#1e2c40"
+                            strokeDasharray="3 4"
+                            vertical={false}
+                          />
+                          <XAxis dataKey="label" {...axis} interval={2} />
+                          <YAxis
+                            {...axis}
+                            axisLine={false}
+                            width={52}
+                            tickFormatter={(v) => mw(v)}
+                            domain={hourlyBias.domain}
+                            ticks={hourlyBias.ticks}
+                            interval={0}
+                          />
+                          <Tooltip
+                            cursor={false}
+                            contentStyle={chartTipStyle}
+                            labelStyle={chartTipLabel}
+                            itemStyle={chartTipItem}
+                            formatter={(value) => `${mw(value, 1)} MW`}
+                            labelFormatter={(label) => `${label} UTC`}
+                          />
+                          <ReferenceLine y={0} stroke="#5b7290" strokeDasharray="3 3" />
+                          <Bar dataKey="bias" name="Bias" maxBarSize={14}>
+                            {byHour.map((h) => (
+                              <Cell
+                                key={h.hour}
+                                fill={h.bias >= 0 ? ACTUAL : '#f87171'}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <p className="empty">No hourly breakdown.</p>
               )}
@@ -301,6 +374,7 @@ export default function Accuracy({ summary, gate, loading, onPickDay }) {
                     <XAxis dataKey="bucket" {...axis} minTickGap={8} />
                     <YAxis {...axis} axisLine={false} width={52} tickFormatter={(v) => mw(v)} />
                     <Tooltip
+                      cursor={false}
                       contentStyle={chartTipStyle}
                       labelStyle={chartTipLabel}
                       itemStyle={chartTipItem}
